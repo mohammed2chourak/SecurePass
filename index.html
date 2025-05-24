@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecurePass - Password Generator</title>
+    <link rel="icon" href="SecurePass-icon.ico" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+        
+        .password-display {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .ad-space {
+            background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 90px;
+            color: #64748b;
+            font-weight: 500;
+            border: 1px dashed #cbd5e1;
+        }
+        
+        .strength-meter {
+            height: 6px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        .history-item {
+            transition: all 0.2s ease;
+        }
+        
+        .history-item:hover {
+            background-color: #f1f5f9;
+        }
+        
+        .btn-glow {
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+        
+        .btn-glow:hover {
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+        
+        .visitor-counter {
+            background: rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(5px);
+        }
+        
+        @media (max-width: 768px) {
+            .password-options {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Visitor Counter -->
+    <div class="visitor-counter fixed top-4 right-4 rounded-full px-3 py-1 z-50 flex items-center text-white text-sm">
+        <i class="fas fa-users mr-2"></i>
+        <span class="font-medium">Visitors: </span>
+        <span id="visitorCount" class="ml-1 font-bold">0</span>
+    </div>
+
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-md">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center">
+                    <div class="bg-white rounded-lg p-2 mr-3">
+                        <i class="fas fa-key text-indigo-600 text-xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold">SecurePass</h1>
+                </div>
+                
+                <!-- Top Ad Space -->
+                <div class="w-full md:w-1/3 ad-space">
+                    <span>Advertisement Space</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Main Content -->
+            <div class="w-full lg:w-2/3">
+                <!-- Password Generator Card -->
+                <div class="gradient-bg rounded-xl shadow-lg overflow-hidden p-6 mb-6 text-white">
+                    <h2 class="text-xl font-bold mb-5 flex items-center">
+                        <i class="fas fa-lock mr-2"></i> Generate Secure Password
+                    </h2>
+                    
+                    <!-- Password Display -->
+                    <div class="mb-5">
+                        <div class="password-display rounded-lg p-3 flex items-center mb-1">
+                            <input type="text" id="passwordOutput" readonly 
+                                   class="w-full bg-transparent border-none outline-none text-base font-mono tracking-wider placeholder-gray-300"
+                                   placeholder="Your password will appear here">
+                            <button id="copyBtn" class="text-white hover:text-indigo-200 transition ml-2">
+                                <i class="fas fa-copy text-lg"></i>
+                            </button>
+                        </div>
+                        <div id="copiedFeedback" class="hidden text-xs text-green-300 font-medium mt-1">
+                            <i class="fas fa-check-circle mr-1"></i> Copied to clipboard!
+                        </div>
+                    </div>
+                    
+                    <!-- Password Strength -->
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm">Password Strength</span>
+                            <span id="strengthText" class="text-sm font-bold">Weak</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div id="strengthMeter" class="strength-meter rounded-full bg-red-500 w-1/4"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Password Options -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 password-options">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Password Length: <span id="lengthValue" class="font-bold">12</span></label>
+                            <input type="range" id="lengthSlider" min="8" max="32" value="12" 
+                                   class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Character Types</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" id="uppercase" checked 
+                                           class="rounded bg-gray-700 border-gray-600 focus:ring-indigo-500 mr-2">
+                                    Uppercase (A-Z)
+                                </label>
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" id="lowercase" checked 
+                                           class="rounded bg-gray-700 border-gray-600 focus:ring-indigo-500 mr-2">
+                                    Lowercase (a-z)
+                                </label>
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" id="numbers" checked 
+                                           class="rounded bg-gray-700 border-gray-600 focus:ring-indigo-500 mr-2">
+                                    Numbers (0-9)
+                                </label>
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" id="symbols" checked 
+                                           class="rounded bg-gray-700 border-gray-600 focus:ring-indigo-500 mr-2">
+                                    Symbols (!@#$)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Generate Button -->
+                    <div class="flex justify-center">
+                        <button id="generateBtn" 
+                                class="px-6 py-2 bg-white text-indigo-600 font-bold rounded-lg btn-glow transition hover:scale-105">
+                            <i class="fas fa-bolt mr-2"></i> Generate Password
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Security Tips -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+                    <div class="p-5">
+                        <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                            <i class="fas fa-shield-alt text-indigo-500 mr-2"></i> Password Security Tips
+                        </h2>
+                        <ul class="space-y-2 text-sm text-gray-600">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-indigo-500 mt-1 mr-2"></i>
+                                <span>Use at least 12 characters with a mix of letters, numbers, and symbols</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-indigo-500 mt-1 mr-2"></i>
+                                <span>Avoid common words, names, or personal information</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-indigo-500 mt-1 mr-2"></i>
+                                <span>Never reuse passwords across different accounts</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-indigo-500 mt-1 mr-2"></i>
+                                <span>Consider using a password manager to store your passwords securely</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Middle Ad Space -->
+                <div class="ad-space mb-6">
+                    <span>Advertisement Space</span>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="w-full lg:w-1/3">
+                <!-- Side Ad Space -->
+                <div class="ad-space mb-6">
+                    <span>Advertisement Space</span>
+                </div>
+                
+                <!-- Password History -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+                    <div class="p-5">
+                        <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                            <i class="fas fa-history text-indigo-500 mr-2"></i> Recent Passwords
+                        </h2>
+                        <div id="passwordHistory" class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                            <p class="text-gray-500 italic text-sm">Generate passwords to see them here</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Password Stats -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+                    <div class="p-5">
+                        <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                            <i class="fas fa-chart-bar text-indigo-500 mr-2"></i> Password Stats
+                        </h2>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span>Average Length</span>
+                                    <span id="avgLength" class="font-bold">0</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="avgLengthBar" class="bg-indigo-500 h-2 rounded-full" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span>Complexity Score</span>
+                                    <span id="avgComplexity" class="font-bold">0%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="avgComplexityBar" class="bg-indigo-500 h-2 rounded-full" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="pt-1 text-xs text-gray-500">
+                                <i class="fas fa-info-circle mr-1 text-indigo-500"></i>
+                                <span>Based on last 5 generated passwords</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Side Ad Space -->
+                <div class="ad-space">
+                    <span>Advertisement Space</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-6">
+        <div class="container mx-auto px-4">
+            <!-- Bottom Ad Space -->
+            <div class="ad-space mb-6 bg-gray-800 border-gray-700">
+                <span class="text-gray-300">Advertisement Space</span>
+            </div>
+            
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center">
+                        <div class="bg-indigo-500 rounded-lg p-2 mr-3">
+                            <i class="fas fa-key text-white"></i>
+                        </div>
+                        <span class="font-bold">SecurePass</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Generate strong, secure passwords instantly</p>
+                </div>
+                <div class="flex space-x-4 text-sm">
+                    <a href="#" class="hover:text-indigo-300 transition">Privacy</a>
+                    <a href="#" class="hover:text-indigo-300 transition">Terms</a>
+                    <a href="#" class="hover:text-indigo-300 transition">Contact</a>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-gray-800 text-center text-xs text-gray-500">
+                <p>&copy; 2023 SecurePass. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const passwordOutput = document.getElementById('passwordOutput');
+        const copyBtn = document.getElementById('copyBtn');
+        const generateBtn = document.getElementById('generateBtn');
+        const lengthSlider = document.getElementById('lengthSlider');
+        const lengthValue = document.getElementById('lengthValue');
+        const uppercase = document.getElementById('uppercase');
+        const lowercase = document.getElementById('lowercase');
+        const numbers = document.getElementById('numbers');
+        const symbols = document.getElementById('symbols');
+        const strengthMeter = document.getElementById('strengthMeter');
+        const strengthText = document.getElementById('strengthText');
+        const passwordHistory = document.getElementById('passwordHistory');
+        const copiedFeedback = document.getElementById('copiedFeedback');
+        const visitorCount = document.getElementById('visitorCount');
+        const avgLength = document.getElementById('avgLength');
+        const avgLengthBar = document.getElementById('avgLengthBar');
+        const avgComplexity = document.getElementById('avgComplexity');
+        const avgComplexityBar = document.getElementById('avgComplexityBar');
+
+        // Character sets
+        const charSets = {
+            uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            lowercase: 'abcdefghijklmnopqrstuvwxyz',
+            numbers: '0123456789',
+            symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+        };
+
+        // Password history array
+        let passwordHistoryArray = [];
+
+        // Initialize with a random password
+        generatePassword();
+
+        // Event Listeners
+        lengthSlider.addEventListener('input', function() {
+            lengthValue.textContent = this.value;
+            generatePassword();
+        });
+
+        [uppercase, lowercase, numbers, symbols].forEach(checkbox => {
+            checkbox.addEventListener('change', generatePassword);
+        });
+
+        generateBtn.addEventListener('click', function() {
+            generatePassword();
+            // Add button press effect
+            this.classList.add('scale-95');
+            setTimeout(() => {
+                this.classList.remove('scale-95');
+            }, 100);
+        });
+
+        copyBtn.addEventListener('click', function() {
+            if (!passwordOutput.value) return;
+            
+            navigator.clipboard.writeText(passwordOutput.value).then(() => {
+                // Show feedback
+                copiedFeedback.classList.remove('hidden');
+                setTimeout(() => {
+                    copiedFeedback.classList.add('hidden');
+                }, 2000);
+            });
+        });
+
+        // Password Generator Function
+        function generatePassword() {
+            let length = parseInt(lengthSlider.value);
+            let selectedChars = '';
+            let password = '';
+            
+            // Build character set based on selected options
+            if (uppercase.checked) selectedChars += charSets.uppercase;
+            if (lowercase.checked) selectedChars += charSets.lowercase;
+            if (numbers.checked) selectedChars += charSets.numbers;
+            if (symbols.checked) selectedChars += charSets.symbols;
+            
+            // If no character types selected, use all
+            if (!selectedChars) {
+                selectedChars = charSets.uppercase + charSets.lowercase + charSets.numbers + charSets.symbols;
+                uppercase.checked = true;
+                lowercase.checked = true;
+                numbers.checked = true;
+                symbols.checked = true;
+            }
+            
+            // Generate password
+            for (let i = 0; i < length; i++) {
+                const randomIndex = Math.floor(Math.random() * selectedChars.length);
+                password += selectedChars[randomIndex];
+            }
+            
+            passwordOutput.value = password;
+            updatePasswordStrength(password);
+            addToHistory(password);
+            updateStats();
+        }
+
+        // Password Strength Calculator
+        function updatePasswordStrength(password) {
+            let strength = 0;
+            const length = password.length;
+            
+            // Length contributes up to 50% of strength
+            strength += Math.min(length / 32 * 50, 50);
+            
+            // Character variety contributes the rest
+            let varietyScore = 0;
+            if (password.match(/[A-Z]/)) varietyScore += 10;
+            if (password.match(/[a-z]/)) varietyScore += 10;
+            if (password.match(/[0-9]/)) varietyScore += 10;
+            if (password.match(/[^A-Za-z0-9]/)) varietyScore += 20;
+            
+            strength += varietyScore;
+            
+            // Update UI
+            strength = Math.min(strength, 100);
+            strengthMeter.style.width = strength + '%';
+            
+            if (strength < 40) {
+                strengthMeter.className = 'strength-meter rounded-full bg-red-500';
+                strengthText.textContent = 'Weak';
+                strengthText.className = 'text-sm font-bold text-red-400';
+            } else if (strength < 70) {
+                strengthMeter.className = 'strength-meter rounded-full bg-yellow-500';
+                strengthText.textContent = 'Medium';
+                strengthText.className = 'text-sm font-bold text-yellow-400';
+            } else {
+                strengthMeter.className = 'strength-meter rounded-full bg-green-500';
+                strengthText.textContent = 'Strong';
+                strengthText.className = 'text-sm font-bold text-green-400';
+            }
+        }
+
+        // Password History
+        function addToHistory(password) {
+            if (!password) return;
+            
+            // Add to history array
+            passwordHistoryArray.unshift({
+                password: password,
+                length: password.length,
+                complexity: calculateComplexity(password),
+                timestamp: new Date().toLocaleTimeString()
+            });
+            
+            // Keep only last 5 items
+            if (passwordHistoryArray.length > 5) {
+                passwordHistoryArray.pop();
+            }
+            
+            // Update history display
+            updateHistoryDisplay();
+        }
+        
+        function updateHistoryDisplay() {
+            // Create history item if empty
+            if (passwordHistoryArray.length === 0) {
+                passwordHistory.innerHTML = '<p class="text-gray-500 italic text-sm">Generate passwords to see them here</p>';
+                return;
+            }
+            
+            passwordHistory.innerHTML = '';
+            
+            passwordHistoryArray.forEach((item, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item flex justify-between items-center p-2 rounded-lg cursor-pointer';
+                
+                const passwordInfo = document.createElement('div');
+                passwordInfo.className = 'flex flex-col';
+                
+                const passwordText = document.createElement('span');
+                passwordText.className = 'font-mono text-xs truncate';
+                passwordText.textContent = item.password;
+                
+                const passwordMeta = document.createElement('span');
+                passwordMeta.className = 'text-xs text-gray-500';
+                passwordMeta.textContent = `${item.length} chars • ${item.timestamp}`;
+                
+                passwordInfo.appendChild(passwordText);
+                passwordInfo.appendChild(passwordMeta);
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'text-gray-500 hover:text-indigo-500 transition ml-2';
+                copyBtn.innerHTML = '<i class="fas fa-copy text-sm"></i>';
+                copyBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(item.password);
+                    copiedFeedback.classList.remove('hidden');
+                    setTimeout(() => {
+                        copiedFeedback.classList.add('hidden');
+                    }, 2000);
+                });
+                
+                historyItem.appendChild(passwordInfo);
+                historyItem.appendChild(copyBtn);
+                passwordHistory.appendChild(historyItem);
+                
+                // Click to fill the password field
+                historyItem.addEventListener('click', () => {
+                    passwordOutput.value = item.password;
+                    updatePasswordStrength(item.password);
+                });
+            });
+        }
+        
+        function calculateComplexity(password) {
+            let complexity = 0;
+            
+            // Length contributes up to 40%
+            complexity += Math.min(password.length / 32 * 40, 40);
+            
+            // Character variety contributes the rest
+            if (password.match(/[A-Z]/)) complexity += 15;
+            if (password.match(/[a-z]/)) complexity += 15;
+            if (password.match(/[0-9]/)) complexity += 15;
+            if (password.match(/[^A-Za-z0-9]/)) complexity += 15;
+            
+            return Math.min(complexity, 100);
+        }
+        
+        function updateStats() {
+            if (passwordHistoryArray.length === 0) {
+                avgLength.textContent = '0';
+                avgLengthBar.style.width = '0%';
+                avgComplexity.textContent = '0%';
+                avgComplexityBar.style.width = '0%';
+                return;
+            }
+            
+            // Calculate average length
+            const totalLength = passwordHistoryArray.reduce((sum, item) => sum + item.length, 0);
+            const averageLength = Math.round(totalLength / passwordHistoryArray.length);
+            avgLength.textContent = averageLength;
+            avgLengthBar.style.width = `${(averageLength / 32) * 100}%`;
+            
+            // Calculate average complexity
+            const totalComplexity = passwordHistoryArray.reduce((sum, item) => sum + item.complexity, 0);
+            const averageComplexity = Math.round(totalComplexity / passwordHistoryArray.length);
+            avgComplexity.textContent = `${averageComplexity}%`;
+            avgComplexityBar.style.width = `${averageComplexity}%`;
+        }
+
+        // Visitor Counter (simulated with localStorage)
+        function updateVisitorCounter() {
+            // Get or initialize visitor count from localStorage
+            let count = localStorage.getItem('visitorCount');
+            
+            if (!count) {
+                // If first visit, set a random base number between 1000-5000
+                count = Math.floor(Math.random() * 4000) + 1000;
+            } else {
+                // Increment count
+                count = parseInt(count);
+            }
+            
+            // Increment count on each visit
+            count += 1;
+            localStorage.setItem('visitorCount', count.toString());
+            
+            // Display with animation
+            animateCounter(visitorCount, parseInt(visitorCount.textContent) || 0, count, 1000);
+        }
+
+        // Counter animation
+        function animateCounter(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                element.textContent = Math.floor(progress * (end - start) + start).toLocaleString();
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Initialize visitor counter
+        updateVisitorCounter();
+        
+        // Simulate real-time updates (every 30 seconds)
+        setInterval(() => {
+            let count = parseInt(localStorage.getItem('visitorCount'));
+            count += Math.floor(Math.random() * 3) + 1; // Add 1-3 visitors
+            localStorage.setItem('visitorCount', count.toString());
+            animateCounter(visitorCount, parseInt(visitorCount.textContent.replace(/,/g, '')), count, 500);
+        }, 30000);
+    </script>
+</body>
+</html>
